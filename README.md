@@ -9,7 +9,16 @@
   - INT4 量化
   - NF4 量化（4位NormalFloat）
   - FP8 量化
-  - 模型剪枝
+  - GPTQ 量化（需要预训练的GPTQ模型）
+  - AWQ 量化（需要预训练的AWQ模型）
+  - GGUF 量化（需要预训练的GGUF模型）
+  - 模型剪枝（支持多种剪枝策略）
+  - 知识蒸馏（Knowledge Distillation）
+- 剪枝策略：
+  - Magnitude-based（基于权重幅度）
+  - Random（随机剪枝）
+  - Structured（结构化剪枝）
+  - Layer-adaptive（层自适应剪枝）
 - 提供压缩前后的详细对比报告，包括：
   - 模型大小对比
   - 推理速度对比
@@ -41,8 +50,11 @@ python model_compression.py --model_name "Qwen/Qwen2.5-VL-3B-Instruct" --compres
 ### 参数说明
 
 - `--model_name`：要压缩的模型名称或本地路径（默认为 "Qwen/Qwen2.5-VL-3B-Instruct"）
-- `--compression_type`：压缩类型，可选值："int8", "int4", "nf4", "fp8", "prune"（默认为 "int8"）
+- `--compression_type`：压缩类型，可选值："int8", "int4", "nf4", "fp8", "gptq", "awq", "gguf", "prune", "distill"（默认为 "int8"）
 - `--pruning_ratio`：剪枝比例，仅在 `compression_type=prune` 时有效（默认为 0.1，即 10%）
+- `--pruning_method`：剪枝方法，仅在 `compression_type=prune` 时有效，可选值："magnitude", "random", "structured", "layer_adaptive"（默认为 "magnitude"）
+- `--student_model_name`：学生模型名称，仅在 `compression_type=distill` 时有效（默认为 None，表示使用与教师模型相同的模型）
+- `--distill_epochs`：蒸馏训练轮数，仅在 `compression_type=distill` 时有效（默认为 3）
 - `--output_dir`：压缩后模型的保存目录（默认为 "./compressed_model"）
 - `--device`：使用的设备，可选值："cpu" 或 "cuda"（默认为 "cpu"）
 - `--test_image`：用于测试模型功能的图像 URL（默认为示例图像）
@@ -73,6 +85,52 @@ python model_compression.py --model_name "Qwen/Qwen2.5-VL-3B-Instruct" --compres
 
 ```bash
 python model_compression.py --model_name "Qwen/Qwen2.5-VL-3B-Instruct" --compression_type "int8" --output_dir "./my_compressed_models" --test_image "https://example.com/test.jpg"
+```
+
+### 快速测试命令
+
+```bash
+# INT8量化
+python model_compression.py --model_name "Qwen/Qwen2.5-VL-3B-Instruct" --compression_type "int8"
+
+# 4位NF4量化
+python model_compression.py --model_name "Qwen/Qwen2.5-VL-3B-Instruct" --compression_type "nf4"
+
+# 剪枝（10%剪枝率，magnitude方法）
+python model_compression.py --model_name "Qwen/Qwen2.5-VL-3B-Instruct" --compression_type "prune" --pruning_ratio 0.1
+```
+
+### 高级使用示例
+
+```bash
+# 使用GPTQ量化（需要预训练的GPTQ模型）
+python model_compression.py --model_name "Qwen/Qwen2.5-VL-3B-Instruct" --compression_type "gptq"
+
+# 使用AWQ量化（需要预训练的AWQ模型）
+python model_compression.py --model_name "Qwen/Qwen2.5-VL-3B-Instruct" --compression_type "awq"
+
+# 使用GGUF量化（需要预训练的GGUF模型）
+python model_compression.py --model_name "Qwen/Qwen2.5-VL-3B-Instruct" --compression_type "gguf"
+
+# 使用不同的剪枝方法
+python model_compression.py --model_name "Qwen/Qwen2.5-VL-3B-Instruct" --compression_type "prune" \
+  --pruning_ratio 0.2 --pruning_method "random"
+
+# 结构化剪枝
+python model_compression.py --model_name "Qwen/Qwen2.5-VL-3B-Instruct" --compression_type "prune" \
+  --pruning_ratio 0.15 --pruning_method "structured"
+
+# 层自适应剪枝
+python model_compression.py --model_name "Qwen/Qwen2.5-VL-3B-Instruct" --compression_type "prune" \
+  --pruning_ratio 0.2 --pruning_method "layer_adaptive"
+
+# 使用知识蒸馏（使用相同模型作为学生模型）
+python model_compression.py --model_name "Qwen/Qwen2.5-VL-3B-Instruct" --compression_type "distill" \
+  --distill_epochs 5
+
+# 使用知识蒸馏（指定不同的学生模型）
+python model_compression.py --model_name "Qwen/Qwen2.5-VL-7B-Instruct" --compression_type "distill" \
+  --student_model_name "Qwen/Qwen2.5-VL-3B-Instruct" --distill_epochs 3
 ```
 
 ## 输出结果
